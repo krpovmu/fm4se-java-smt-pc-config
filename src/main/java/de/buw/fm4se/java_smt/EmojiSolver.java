@@ -25,7 +25,6 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 public class EmojiSolver {
 
 	public static void main(String[] args) throws Exception {
-		
 		// setting up SMT solver related stuff
 		Configuration config = Configuration.fromCmdLineArguments(args);
 		LogManager logger = BasicLogManager.create(config);
