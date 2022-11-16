@@ -9,7 +9,6 @@ import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.Model;
@@ -26,29 +25,47 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 public class EmojiSolver {
 
 	public static void main(String[] args) throws Exception {
+		
+		// setting up SMT solver related stuff
 		Configuration config = Configuration.fromCmdLineArguments(args);
 		LogManager logger = BasicLogManager.create(config);
 		ShutdownManager shutdown = ShutdownManager.create();
 
+		// we use PRINCESS SMT solver as SMTINTERPOL did not support integer multiplication
 		SolverContext context = SolverContextFactory.createSolverContext(config, logger, shutdown.getNotifier(),
-				Solvers.SMTINTERPOL);
+				Solvers.PRINCESS);
 
 		FormulaManager fmgr = context.getFormulaManager();
 
-		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 
-		IntegerFormula a = imgr.makeVariable("a"), b = imgr.makeVariable("b"), c = imgr.makeVariable("c");
-		BooleanFormula constraint = bmgr.or(imgr.equal(imgr.add(a, b), c),
-				imgr.equal(imgr.add(a, c), imgr.multiply(imgr.makeNumber(2), b)));
-
+		// declaring integer variables similar to "(declare-const ... Int)"
+		IntegerFormula doubleRainbow = imgr.makeVariable("doubleRainbow");
+		IntegerFormula rainbow = imgr.makeVariable("rainbow");
+		IntegerFormula rain = imgr.makeVariable("rain");
+		IntegerFormula thunder = imgr.makeVariable("thunder");
+		IntegerFormula result = imgr.makeVariable("result");
+		
+		// construction constraints
+		BooleanFormula line1 = imgr.equal(imgr.add(imgr.subtract(doubleRainbow, rainbow), rainbow), imgr.makeNumber(12));
+		BooleanFormula line2 = imgr.equal(imgr.subtract(imgr.subtract(doubleRainbow, rain), rain), imgr.makeNumber(4));
+		BooleanFormula line3 = imgr.equal(imgr.subtract(imgr.multiply(rain, rainbow), thunder), imgr.makeNumber(22));
+		BooleanFormula line4 = imgr.equal(imgr.subtract(imgr.divide(doubleRainbow, thunder), rain), result);
+		
+		// now feed all lines to the solver
 		try (ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-			prover.addConstraint(constraint);
+			prover.addConstraint(line1);
+			prover.addConstraint(line2);
+			prover.addConstraint(line3);
+			prover.addConstraint(line4);
 			boolean isUnsat = prover.isUnsat();
 			if (!isUnsat) {
 				Model model = prover.getModel();
-				BigInteger value = model.evaluate(a);
-				System.out.println(value);
+				// print whole model
+				System.out.println(model);
+				// get a specific model
+				BigInteger value = model.evaluate(result);
+				System.out.println("Result is: " + value);
 			}
 		}
 	}
