@@ -8,4 +8,6 @@ For this assignment you are asked to build a PC configuration SMT problem and ex
 - Users provide a budget on the console.
 - The selected components of a configuration are listed by the program, if one exists.
 
-A video is available from [https://youtu.be/9ptEo4apVcU](https://youtu.be/9ptEo4apVcU).
+A video going through the code is available from [https://youtu.be/Di2HA49KdLw](https://youtu.be/Di2HA49KdLw).
+
+Make sure to first see the introduction video for using JavaSMT for our purposes [https://youtu.be/9ptEo4apVcU](https://youtu.be/9ptEo4apVcU).
