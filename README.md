@@ -1,11 +1,10 @@
-# fm2se-java-smt Demo Project
+# Automated PC configuration using an SMT solver
 
-This is a demo of how to use java-smt based on the template and tutorial from [sosy-lab/java-smt](https://github.com/sosy-lab/java-smt/blob/master/doc/Getting-started.md). We use a pure Java-based SMT solver. For more SMT solvers, e.g., Z3 binaries, please refer to the above tutorial.
+For this assignment you are asked to build a PC configuration SMT problem and extract a solution from the model using JavaSMT.
 
-We demonstrate the use of JavaSMT by solving two tasks from the lecture and exercises of the Formal Methods for Software Engineering module.
-
-First, we show how to encode and solve a simple emoji math puzzle in class [EmojiSolver](src/main/java/de/buw/fm4se/java_smt/EmojiSolver.java). This example only uses integer arithmetic.
-
-Second, we show how to encode a PC configuration problem in class [PCConfigSolver](src/main/java/de/buw/fm4se/java_smt/PCConfigSolver.java). This example combines propositional logic and simple integer arithmetic.
+- Components, their categories, and their prices can be read from files, i.e., they may change. 
+- Constraints between components of kind `requires` and `excludes` (similar to those in feature models) can be read from another file.
+- Every valid PC needs at least component from each of these categories: `CPU`, `motherboard`, `RAM`, and `storage`
+- Users provide a budget on the console.
 
 A video is available from [https://youtu.be/9ptEo4apVcU](https://youtu.be/9ptEo4apVcU).
