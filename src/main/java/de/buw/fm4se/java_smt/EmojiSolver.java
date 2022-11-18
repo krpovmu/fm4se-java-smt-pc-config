@@ -57,8 +57,10 @@ public class EmojiSolver {
 			prover.addConstraint(line2);
 			prover.addConstraint(line3);
 			prover.addConstraint(line4);
+			// (check-sat)
 			boolean isUnsat = prover.isUnsat();
 			if (!isUnsat) {
+				// (get-model)
 				Model model = prover.getModel();
 				// print whole model
 				System.out.println(model);
