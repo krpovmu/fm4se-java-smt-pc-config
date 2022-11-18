@@ -1,0 +1,5 @@
+requires, i3, gigabyteIntel
+requires, i7, gigabyteIntel
+requires, ryzen7, msiAMD
+excludes, RTX, GTX
+excludes, msiAMD, gigabyteIntel

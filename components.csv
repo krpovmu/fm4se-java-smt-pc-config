@@ -1,0 +1,15 @@
+CPU, i3, 113
+CPU, i7, 360
+CPU, ryzen7, 230
+motherboard, gigabyteIntel, 90
+motherboard, msiAMD, 120
+RAM, 8GB, 25
+RAM, 16GB, 40
+RAM, 32GB, 99
+GPU, RTX, 699
+GPU, GTX, 230
+storage, hdd1tb, 39
+storage, ssd1tb, 90
+storage, ssd2tb, 185
+opticalDrive, dvdrw, 16
+cooler, caseFan, 40
