@@ -8,15 +8,15 @@
 
 package org.sosy_lab.java_smt_example;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.sosy_lab.java_smt.example.Sudoku.SIZE;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -100,7 +100,7 @@ public class SudokuTest {
           + "623714895\n"
           + "451839627\n";
 
-  @Before
+  @BeforeEach
   public void init() throws InvalidConfigurationException {
     config = Configuration.defaultConfiguration();
     logger = BasicLogManager.create(config);
@@ -110,7 +110,7 @@ public class SudokuTest {
   /*
    * We close our context after we are done with a solver to not waste memory.
    */
-  @After
+  @AfterEach
   public final void closeSolver() {
     if (context != null) {
       context.close();
