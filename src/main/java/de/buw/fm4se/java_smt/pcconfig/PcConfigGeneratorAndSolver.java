@@ -19,7 +19,11 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 public class PcConfigGeneratorAndSolver {
 
@@ -45,6 +49,7 @@ public class PcConfigGeneratorAndSolver {
 
 		FormulaManager fmgr = context.getFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+		IntegerFormulaManager componentPrice = fmgr.getIntegerFormulaManager();
 
 		Scanner scan = new Scanner(System.in);
 		System.out.print("Please enter a budget: ");
@@ -53,7 +58,7 @@ public class PcConfigGeneratorAndSolver {
 
 		// get all component categories
 		Map<String, BooleanFormula> boolComponents = new HashMap<>();
-		Map<BooleanFormula, Object> boolComponentsWithPrices = new HashMap<>();
+		Map<BooleanFormula, Integer> boolComponentsWithPrices = new HashMap<>();
 		Set<Object> kindComponents = PcConfigReader.getTypeComponents();
 		BooleanFormula orValues = null;
 		BooleanFormula constrain02Requires = null;
@@ -71,12 +76,10 @@ public class PcConfigGeneratorAndSolver {
 		}
 
 		// Create Map of Boolean objects with prices
-		IntegerFormulaManager componentPrice = fmgr.getIntegerFormulaManager();
 		for (Object kind : kindComponents) {
 			Map<String, Integer> allComponentsByType = PcConfigReader.getComponents(kind.toString());
 			for (String key : allComponentsByType.keySet()) {
-				boolComponentsWithPrices.put(boolComponents.get(key),
-						componentPrice.makeNumber(allComponentsByType.get(key)));
+				boolComponentsWithPrices.put(boolComponents.get(key), allComponentsByType.get(key));
 			}
 		}
 
@@ -100,6 +103,7 @@ public class PcConfigGeneratorAndSolver {
 			orValues = bmgr.or(objectsOrComponent);
 			orList.add(orValues);
 		}
+		// Constrain
 		constrain03OnlyOneElementMandatoryPerPC = bmgr.and(orList);
 
 		// #2 Contrain: Constraints between components of kind requires and excludes
@@ -134,29 +138,50 @@ public class PcConfigGeneratorAndSolver {
 								componentsByConstrainType.get(componentsByBrand.get(componentsList).get(0))));
 					}
 				}
+				// Constrain creation
 				constrain02Requires = bmgr.and(requiresList);
-				System.out.println(constrain02Requires);
 
 				// Excludes Constrains
 			} else if (typeConstrain == "excludes") {
-				List<BooleanFormula> xorElements = new ArrayList<>();
 				for (String[] constrain : constrains) {
 					BooleanFormula componentA = boolComponents.get(constrain[0]);
 					BooleanFormula componentB = boolComponents.get(constrain[1]);
-					xorElements.add(bmgr.xor(componentA, componentB));
+					excludeList.add(bmgr.xor(componentA, componentB));
 				}
-				constrain02Excludes = bmgr.and(xorElements);
-				System.out.println(constrain02Excludes);
+				// Constrain creation
+				constrain02Excludes = bmgr.and(excludeList);
+
 			} else {
-				System.out.println("Type of constrain prohibited ... Perejil !!! ...");
+				System.out.println("type of constrain unknown.");
 			}
 		}
-
 		// Prices per component
-		
-		
-		
-		
+		List<IntegerFormula> costings = new ArrayList<>();
+		for (BooleanFormula objectKey : boolComponentsWithPrices.keySet()) {
+			costings.add(bmgr.ifThenElse(objectKey, componentPrice.makeNumber(boolComponentsWithPrices.get(objectKey)),
+					componentPrice.makeNumber(0)));
+		}
+
+		// Create Budget object as a constrain and compare
+		BooleanFormula budget_Total = componentPrice.lessOrEquals(componentPrice.sum(costings),
+				componentPrice.makeNumber(budget));
+
+		// now feed all lines to the solver
+		try (ProverEnvironment prover = context.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+			prover.addConstraint(constrain03OnlyOneElementMandatoryPerPC);
+			prover.addConstraint(constrain02Requires);
+			prover.addConstraint(constrain02Excludes);
+			prover.addConstraint(budget_Total);
+
+			boolean isUnsat = prover.isUnsat();
+			if (!isUnsat) {
+				Model model = prover.getModel();
+				// print whole model
+				System.out.println(model);
+			} else {
+				System.out.println("problem is UNSAT :-(");
+			}
+		}
 
 	}
 }
