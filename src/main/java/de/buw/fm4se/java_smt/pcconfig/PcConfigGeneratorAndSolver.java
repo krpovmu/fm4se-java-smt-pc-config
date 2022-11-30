@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
@@ -43,7 +44,6 @@ public class PcConfigGeneratorAndSolver {
 				Solvers.PRINCESS);
 
 		FormulaManager fmgr = context.getFormulaManager();
-		IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
 		BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
 
 		Scanner scan = new Scanner(System.in);
@@ -53,9 +53,11 @@ public class PcConfigGeneratorAndSolver {
 
 		// get all component categories
 		Map<String, BooleanFormula> boolComponents = new HashMap<>();
+		Map<BooleanFormula, Object> boolComponentsWithPrices = new HashMap<>();
 		Set<Object> kindComponents = PcConfigReader.getTypeComponents();
 		BooleanFormula orValues = null;
-		BooleanFormula constrain02RequiresAndExcludes = null;
+		BooleanFormula constrain02Requires = null;
+		BooleanFormula constrain02Excludes = null;
 		BooleanFormula constrain03OnlyOneElementMandatoryPerPC = null;
 		List<BooleanFormula> orList = new ArrayList<>();
 
@@ -65,6 +67,16 @@ public class PcConfigGeneratorAndSolver {
 			for (String key : allComponentsByType.keySet()) {
 				BooleanFormula componentObject = bmgr.makeVariable(key);
 				boolComponents.put(key, componentObject);
+			}
+		}
+
+		// Create Map of Boolean objects with prices
+		IntegerFormulaManager componentPrice = fmgr.getIntegerFormulaManager();
+		for (Object kind : kindComponents) {
+			Map<String, Integer> allComponentsByType = PcConfigReader.getComponents(kind.toString());
+			for (String key : allComponentsByType.keySet()) {
+				boolComponentsWithPrices.put(boolComponents.get(key),
+						componentPrice.makeNumber(allComponentsByType.get(key)));
 			}
 		}
 
@@ -92,64 +104,59 @@ public class PcConfigGeneratorAndSolver {
 
 		// #2 Contrain: Constraints between components of kind requires and excludes
 		// (similar to those in feature models) can be read from another file.
-
 		List<BooleanFormula> requiresList = new ArrayList<>();
 		List<BooleanFormula> excludeList = new ArrayList<>();
 
 		for (String typeConstrain : kindConstrainsList) {
 			List<String[]> constrains = PcConfigReader.getConstraints(typeConstrain);
-
+			// Requires constrains
 			if (typeConstrain == "requires") {
-
-				Map<String, BooleanFormula> requiresComponents = new HashMap<>();
-				
+				Map<BooleanFormula, BooleanFormula> componentsByConstrainType = new HashMap<>();
 				for (String[] constrain : constrains) {
-					System.out.println(constrain[0] + " " + constrain[1]);
+					BooleanFormula brandComponent = boolComponents.get(constrain[1]);
+					BooleanFormula componentObject = boolComponents.get(constrain[0]);
+					componentsByConstrainType.put(componentObject, brandComponent);
 				}
-				
+				Map<Object, List<Object>> componentsByBrand = componentsByConstrainType.entrySet().stream()
+						.collect(Collectors.groupingBy(Map.Entry::getValue,
+								Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
+				for (Object componentsList : componentsByBrand.keySet()) {
+					if (componentsByBrand.get(componentsList).size() > 1) {
+						BooleanFormula key = null;
+						List<BooleanFormula> orElements = new ArrayList<>();
+						for (Object orComponent : componentsByBrand.get(componentsList)) {
+							key = componentsByConstrainType.get(orComponent);
+							orElements.add((BooleanFormula) orComponent);
+						}
+						requiresList.add(bmgr.implication((bmgr.or(orElements)), key));
+					} else {
+						requiresList.add(bmgr.implication((BooleanFormula) componentsByBrand.get(componentsList).get(0),
+								componentsByConstrainType.get(componentsByBrand.get(componentsList).get(0))));
+					}
+				}
+				constrain02Requires = bmgr.and(requiresList);
+				System.out.println(constrain02Requires);
+
+				// Excludes Constrains
 			} else if (typeConstrain == "excludes") {
-
+				List<BooleanFormula> xorElements = new ArrayList<>();
 				for (String[] constrain : constrains) {
-					System.out.println(constrain[0] + " " + constrain[1]);
+					BooleanFormula componentA = boolComponents.get(constrain[0]);
+					BooleanFormula componentB = boolComponents.get(constrain[1]);
+					xorElements.add(bmgr.xor(componentA, componentB));
 				}
+				constrain02Excludes = bmgr.and(xorElements);
+				System.out.println(constrain02Excludes);
 			} else {
-				System.out.println("Type of constrain prohibited ... Perejil");
+				System.out.println("Type of constrain prohibited ... Perejil !!! ...");
 			}
 		}
+
+		// Prices per component
+		
+		
+		
+		
+
 	}
-
-// INFO this is just to see how to access the information from the files
-//		System.out.println("\nAvailable components:");
-//		printComponents("CPU");
-//		printComponents("motherboard");
-//		printComponents("RAM");
-//		printComponents("GPU");
-//		printComponents("storage");
-//		printComponents("opticalDrive");
-//		printComponents("cooler");
-
-//		System.out.println("\nConstraints:");
-//		printConstraints("requires");
-//		printConstraints("excludes");
-//
-//		System.out.print("\nSearching for a configuration costing at most " + budget);
-
-	// TODO implement the translation to SMT and the interpretation of the model
-
-//	}
-
-//	private static void printConstraints(String kind) {
-//		for (String[] pair : PcConfigReader.getConstraints(kind)) {
-//			System.out.println(pair[0] + " " + kind + " " + pair[1]);
-//		}
-//	}
-
-//	private static Map printComponents(String type) {
-//		Map<String, Integer> components = PcConfigReader.getComponents(type);
-//		for (String cmp : compoents.keySet()) {
-//			System.out.println(cmp + " costs " + compoents.get(cmp));
-//		}
-//		return components;
-//	}
-
 }
