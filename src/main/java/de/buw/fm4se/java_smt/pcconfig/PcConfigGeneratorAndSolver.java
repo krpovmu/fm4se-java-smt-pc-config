@@ -146,8 +146,8 @@ public class PcConfigGeneratorAndSolver {
 				for (String[] constrain : constrains) {
 					BooleanFormula componentA = boolComponents.get(constrain[0]);
 					BooleanFormula componentB = boolComponents.get(constrain[1]);
-					excludeList.add(bmgr.xor(componentA, componentB));
-//					excludeList.add(bmgr.implication(componentA, bmgr.not(componentB)));
+//					excludeList.add(bmgr.xor(componentA, componentB));
+					excludeList.add(bmgr.implication(componentA, bmgr.not(componentB)));
 				}
 				// Constrain creation
 				constrain02Excludes = bmgr.and(excludeList);
