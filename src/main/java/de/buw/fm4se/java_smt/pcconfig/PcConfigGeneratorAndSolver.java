@@ -147,6 +147,7 @@ public class PcConfigGeneratorAndSolver {
 					BooleanFormula componentA = boolComponents.get(constrain[0]);
 					BooleanFormula componentB = boolComponents.get(constrain[1]);
 					excludeList.add(bmgr.xor(componentA, componentB));
+//					excludeList.add(bmgr.implication(componentA, bmgr.not(componentB)));
 				}
 				// Constrain creation
 				constrain02Excludes = bmgr.and(excludeList);
@@ -182,6 +183,5 @@ public class PcConfigGeneratorAndSolver {
 				System.out.println("problem is UNSAT :-(");
 			}
 		}
-
 	}
 }
